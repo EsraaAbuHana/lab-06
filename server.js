@@ -21,19 +21,7 @@ server.get('/location', (req, res) => {
     res.send(locObj);
 
 })
-function Location(geoData) {
-    this.search_query = 'Lynnwood';
-    this.formatted_query = geoData[0].display_name;
-    this.latitude = geoData[0].lat;
-    this.longitude = geoData[0].lon;
-    // {
-    //     "search_query": "seattle",
-    //     "formatted_query": "Seattle, WA, USA",
-    //     "latitude": "47.606210",
-    //     "longitude": "-122.332071"
-    //   }
-}
-// let arrOfObjs=[];
+
 
 server.get('/weather', (req, res) => {
     const weatherData = require('./data/weather.json');
@@ -58,6 +46,35 @@ server.get('/weather', (req, res) => {
     console.log(arrOfWeatherData);
 
 })
+
+server.use('*',(req,res)=>{
+    let errorObj={status: 500,
+
+        responseText: "Sorry, something went wrong",}
+    res.status(500).send(errorObj)
+
+    // {
+    //     
+    //     ...
+    //   }
+})
+
+
+function Location(geoData) {
+    this.search_query = 'Lynnwood';
+    this.formatted_query = geoData[0].display_name;
+    this.latitude = geoData[0].lat;
+    this.longitude = geoData[0].lon;
+    // {
+    //     "search_query": "seattle",
+    //     "formatted_query": "Seattle, WA, USA",
+    //     "latitude": "47.606210",
+    //     "longitude": "-122.332071"
+    //   }
+}
+// let arrOfObjs=[];
+
+
 function Weather(weatherData) {
     this.forecast = weatherData.data.description;
     this.time = weatherData.data.valid_date;
