@@ -45,11 +45,17 @@ server.get('/weather', (req, res) => {
         const weatherObj = new Weather(weatherData);
         // console.log(weatherObj.data);
         arrOfWeatherData.push(this);
+        // element.forEach(prop => {
+
+        // Object.entries(arrOfWeatherData.data).forEach(element => {
+        //     console.log(element);
+        //   });
+
+        // });
 
     });
     res.send(arrOfWeatherData);
-            console.log(arrOfWeatherData);
-
+    console.log(arrOfWeatherData);
 
 })
 function Weather(weatherData) {
