@@ -1,10 +1,11 @@
 'use strict';
+
 const express = require('express');
 const server = express();
 const PORT = process.env.PORT || 3030;
 require('dotenv').config();
-
 const cors = require('cors');
+
 
 server.use(cors());
 
@@ -24,28 +25,40 @@ server.get('/location', (req, res) => {
 
 
 server.get('/weather', (req, res) => {
+    // let =[];
     const weatherData = require('./data/weather.json');
-    // console.log(weatherData);
+ // console.log(weatherData);
     // console.log(weatherData[0].data);
-    let arrOfWeatherData = Object.keys(weatherData.data);
-    arrOfWeatherData.forEach(element => {
+    // let weatherObj = Object.keys(weatherData.data);
 
-        const weatherObj = new Weather(weatherData);
-        // console.log(weatherObj.data);
-        arrOfWeatherData.push(this);
-        // element.forEach(prop => {
+  let aarOfWeatherObj = weatherData.data.map( function(val){
+        let weatherObj = new Weather(weatherData);
 
-        // Object.entries(arrOfWeatherData.data).forEach(element => {
-        //     console.log(element);
-        //   });
+ return weatherObj ;
+   
+});
+    res.send(aarOfWeatherObj);
 
-        // });
-
-    });
-    res.send(arrOfWeatherData);
-    console.log(arrOfWeatherData);
-
+    
 })
+
+    // weatherObj.forEach(element => {
+
+    //     const weatherObj = new Weather(weatherData);
+    //     // console.log(weatherObj.data);
+    //     weatherObj.push(this);
+    //     // element.forEach(prop => {
+
+    //     // Object.entries(weatherObj.data).forEach(element => {
+    //     //     console.log(element);
+    //     //   });
+    //   
+
+    // });
+
+    // console.log(weatherData);
+
+// })
 
 server.use('*',(req,res)=>{
     let errorObj={status: 500,
@@ -76,16 +89,18 @@ function Location(geoData) {
 
 
 function Weather(weatherData) {
-    this.forecast = weatherData.data.description;
-    this.time = weatherData.data.valid_date;
-    // arrOfObjs.push();
-    // [{
-    //     "forecast": "Partly cloudy until afternoon.",
-    //     "time": "Mon Jan 01 2001"
-    //   },
-    //]
+    this.forecast = weatherData.description;
+    this.time = Date(weatherData.datetime).toString().slice(0,15);
+  
 }
 
 server.listen(PORT, () => {
     console.log(`Listening on PORT ${PORT}`);
 })
+//weather
+//https://api.weatherbit.io/v2.0/history/daily?postal_code=27601&country=US&start_date=2021-02-18&end_date=2021-02-19&key=API_KEY
+//(weather by city name) &city=Raleigh,NC&start_date=2021-02-18&end_date=2021-02-19
+//Park
+//https://developer.nps.gov/api/v1/parks?parkCode=acad&api_key=SZcUUGdtmXRqUb5BNLV6gQa6TIvkVF0mLVsdFmWd
+//location
+//GET https://us1.locationiq.com/v1/search.php?key=YOUR_ACCESS_TOKEN&q=SEARCH_STRING&format=json
