@@ -13,23 +13,19 @@
 
 //why that :3 packages are looking for funding
 // run `npm fund` for details
-const express = require('express');//7
-const server = express();//13 app=server
-const PORT = process.env.PORT || 3030;//12
-require('dotenv').config();//4
-const cors = require('cors');//8
-const superagent = require('superagent');//9
+const express = require('express');
+const server = express();
+const PORT = process.env.PORT || 3030;
+require('dotenv').config();
+const cors = require('cors');
+const superagent = require('superagent');
+server.use(cors());
+/////////////////////////////////////////////////////////////
 
-
-server.use(cors());//14
-//16-18 home page
-
-
-server.get('/location', locationHandler);//21
-server.get('/weather', weatherHandler);//22
-
-
-function locationHandler(req, res) {//27-38
+server.get('/location', locationHandler);
+server.get('/weather', weatherHandler);
+////////////////////////////////////////////////////////////
+function locationHandler(req, res) {
     const city = req.query.city;
     //
     getLocation(city).then(locationData => {
@@ -37,14 +33,16 @@ function locationHandler(req, res) {//27-38
     })
 
 }
-function weatherHandler(req, res) {//67-71
+function weatherHandler(req, res) {
     const city = req.query.city;
     
     getWeather(city).then(weatherData => {
         res.status(200).json(weatherData);
     })
 }
-function getLocation(city) {//39-58
+
+//////////////////////////////////////////////////////////////
+function getLocation(city) {
     let key = process.env.locationKey;
     let url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;
     return superagent.get(url).then(locData => {
@@ -56,33 +54,33 @@ function getLocation(city) {//39-58
 
 }
 
-const arrOfDays_Weather = [];//74
-function getWeather(city) {//75-82
+// const arrOfDays_Weather = [];
+function getWeather(city) {
     let key = process.env.WeatherKey;
     let url = `https://api.weatherbit.io/v2.0/history/daily?&city=${city_name},NC&start_date=2021-02-18&end_date=2021-02-19&key=${key}`;
     return superagent.get(url).then(weatherDayData => {
         
-        const weatherData = new Location(weatherDayData);
+        const weatherData = new Weather(weatherDayData);
         return weatherData;
     });
 }
-///////////////////////////////////////////
+/////////////////////////////////////////////////////////////
 
-function Location(city, geoData) {//60-65
+function Location(city, geoData) {
     this.search_query = city;
     this.formatted_query = geoData.display_name;
     this.latitude = geoData.lat;
     this.longitude = geoData.lon;
 
 }
-function Weather(city_name,temp,datetime) {//85-89
+function Weather(city_name,temp,datetime) {
     this.city_name = city_name;
     this.temp = day.data.temp;
     this.datetime = new Date(data.datetime).toString().slice(0, 15);
 
 }
 
-server.listen(PORT, () => {//92
+server.listen(PORT, () => {
     console.log(`Listening on PORT ${PORT}`);
 });
 
