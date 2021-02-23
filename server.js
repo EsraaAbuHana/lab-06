@@ -38,7 +38,7 @@ function locationHandler(req, res) {
 }
 function weatherHandler(req, res) {
     const city = req.query.city;
-    
+
     getWeather(city).then(weatherData => {
         res.status(200).json(weatherData);
     })
@@ -46,7 +46,7 @@ function weatherHandler(req, res) {
 
 function parkHandler(req, res) {
     const city = req.query.city;
-    
+
     getPark(name).then(parkData => {
         res.status(200).json(parkData);
     })
@@ -69,7 +69,7 @@ function getWeather(city) {
     let key = process.env.WeatherKey;
     let url = `https://api.weatherbit.io/v2.0/history/daily?&city=${city_name},NC&start_date=2021-02-18&end_date=2021-02-19&key=${key}`;
     return superagent.get(url).then(weatherDayData => {
-        
+
         const weatherData = new Weather(weatherDayData);
         return weatherData;
     });
@@ -79,7 +79,7 @@ function getPark(city) {
     let key = process.env.parkKey;
     let url = `us1.locationiq.com/v1/search.php?key=${name}&q=${key}&format=json`;
     return superagent.get(url).then(parkDayData => {
-        
+
         const parkData = new Park(parkDayData);
         return parkData;
     });
@@ -93,16 +93,19 @@ function Location(city, geoData) {
     this.longitude = geoData.lon;
 
 }
-function Weather(city_name,temp,datetime) {
+function Weather(city_name, temp, datetime) {
     this.city_name = city_name;
     this.temp = day.data.temp;
     this.datetime = new Date(data.datetime).toString().slice(0, 15);
 
 }
 function Park(name) {
-    this.name = name;
+    this.name = full_name;
     this.description = data.description;
-  
+    this.parkUrl = data.url;
+    this.directionsUrl = data.directionsUrl;
+    this.fee = data.fees;
+
 }
 
 server.listen(PORT, () => {
