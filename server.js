@@ -13,10 +13,11 @@
 
 //why that :3 packages are looking for funding
 // run `npm fund` for details
+require('dotenv').config();
+
 const express = require('express');
 const server = express();
 const PORT = process.env.PORT || 3030;
-require('dotenv').config();
 const cors = require('cors');
 const superagent = require('superagent');
 server.use(cors());
@@ -24,6 +25,8 @@ server.use(cors());
 
 server.get('/location', locationHandler);
 server.get('/weather', weatherHandler);
+server.get('/parks', parkHandler);
+
 ////////////////////////////////////////////////////////////
 function locationHandler(req, res) {
     const city = req.query.city;
@@ -41,6 +44,13 @@ function weatherHandler(req, res) {
     })
 }
 
+function parkHandler(req, res) {
+    const city = req.query.city;
+    
+    getPark(name).then(parkData => {
+        res.status(200).json(parkData);
+    })
+}
 //////////////////////////////////////////////////////////////
 function getLocation(city) {
     let key = process.env.locationKey;
@@ -64,6 +74,16 @@ function getWeather(city) {
         return weatherData;
     });
 }
+
+function getPark(city) {
+    let key = process.env.parkKey;
+    let url = `us1.locationiq.com/v1/search.php?key=${name}&q=${key}&format=json`;
+    return superagent.get(url).then(parkDayData => {
+        
+        const parkData = new Park(parkDayData);
+        return parkData;
+    });
+}
 /////////////////////////////////////////////////////////////
 
 function Location(city, geoData) {
@@ -78,6 +98,11 @@ function Weather(city_name,temp,datetime) {
     this.temp = day.data.temp;
     this.datetime = new Date(data.datetime).toString().slice(0, 15);
 
+}
+function Park(name) {
+    this.name = name;
+    this.description = data.description;
+  
 }
 
 server.listen(PORT, () => {
