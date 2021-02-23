@@ -17,10 +17,15 @@ require('dotenv').config();
 
 const express = require('express');
 const server = express();
-const PORT = process.env.PORT || 3030;
 const cors = require('cors');
+
 const superagent = require('superagent');
+const pg=require('pg');
+const client=new pg.client(process.env.database_url);
+
 server.use(cors());
+const PORT = process.env.PORT || 3030;
+
 /////////////////////////////////////////////////////////////
 
 server.get('/location', locationHandler);
@@ -28,14 +33,70 @@ server.get('/weather', weatherHandler);
 server.get('/parks', parkHandler);
 
 ////////////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////////
 function locationHandler(req, res) {
-    const city = req.query.city;
-    //
-    getLocation(city).then(locationData => {
-        res.status(200).json(locationData);
-    })
+   
+        const city = req.query.city;
+
+ let key = process.env.locationKey;
+    let url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;
+///
+let SQL=`SELECT * FROM locations where search_query = "${city}";`;
+client.query(SQL).then(results=>{
+//if (results.rows.length===0){bring from api >>>pass the search to scheme}
+//else()
+if (results.rows.length === 0){
+        superagent.get(url).then(locData => {
+     
+        const locationData = new Location(city,locData.body[0]);
+       res.send(locationData);
+})
+.catch(() => {
+    errorHandler(`Error`, req, res);
+  });
+}else{
+    server.get('/addLocation',(req,res)=>{
+        let formatted_query=req.query.formatted_query;
+        let name=req.query.search_query;
+        let latitude=req.query.latitude;
+        let longitude=req.query.longitude;
+        let SQL=`INSERT INTO locations VALUES($1,$2,$3,$4) RETURNING *;`;
+        let safeValues=[formatted_query,name,latitude,longitude];
+        client.query(SQL,safeValues).then((results)=>{
+            res.send(results.rows);
+        
+        })
+        .catch((error)=>{
+            res.send('this is a big biiig ',error.message)
+        })
+        
+        })
+}
+    
+    res.send(results.rows);
+})
+.catch((error)=>{
+    res.send('this is',error.message)
+})
+/////
 
 }
+
+server.get('location',(req,res)=>{
+    let SQL=`SELECT *FROM location;`;
+    client.query(SQL).then(results=>{
+        res.send(results.rows)
+    })
+    .catch((error)=>{
+        res.send('ther is a line error ',error.message)
+    })
+})
+
+
+
+
 function weatherHandler(req, res) {
     const city = req.query.city;
 
@@ -52,19 +113,7 @@ function parkHandler(req, res) {
     })
 }
 //////////////////////////////////////////////////////////////
-function getLocation(city) {
-    let key = process.env.locationKey;
-    let url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;
-    return superagent.get(url).then(locData => {
-        //error {"error":"Invalid key"}
-        // const  = require('./data/location.json');
-        const locationData = new Location(locData);
-        return locationData;
-    })
 
-}
-
-// const arrOfDays_Weather = [];
 function getWeather(city) {
     let key = process.env.WeatherKey;
     let url = `https://api.weatherbit.io/v2.0/history/daily?&city=${city_name},NC&start_date=2021-02-18&end_date=2021-02-19&key=${key}`;
@@ -108,55 +157,17 @@ function Park(name) {
 
 }
 
+    // const client=new pg.client(process.env.database_url);//1st step local
+    client.connect().then(()=>{
 server.listen(PORT, () => {
-    console.log(`Listening on PORT ${PORT}`);
-});
+    console.log(`Listening on PORT ${PORT}`)
+      });
+    })
+    .catch((error)=>{
 
-// server.get('/weather', (req, res) => {
-//     // let =[];
-//     const weatherData = require('./data/weather.json');
-//  // console.log(weatherData);
-//     // console.log(weatherData[0].data);
-//     // let weatherObj = Object.keys(weatherData.data);
+    res.send('error in line 175 ',error.message)
 
-//   let aarOfWeatherObj = weatherData.data.map( function(val){
-//         let weatherObj = new Weather(weatherData);
+})
 
-//  return weatherObj ;
-
-// });
-//     res.send(aarOfWeatherObj);
-
-// server.get('/test', (req, res) => {
-//     res.send('your server is working fine!!')
-// })
-
-// server.get('/location', (req, res) => {
-//     const locData = require('./data/location.json');
-//     // console.log(locData);
-//     // console.log(locData[0]);
-//     const locObj = new Location(locData);
-//     // console.log(locObj);
-//     res.send(locObj);
-
-// server.use('*', (req, res) => {
-//     let errorObj = {
-//         status: 500,
-
-//         responseText: "Sorry, something went wrong",
-//     }
-//     res.status(500).send(errorObj)
-
-// })
-//     const geoData = require('./data/weather.json');
-
-//     geoData.data.map(function (val) {
-//         let weatherObj = new Weather(val);
-
-//         return arrOfDays_Weather;
-
-//     });
-//     res.send(arrOfDays_Weather);
-
-// }
+/////////////////////////////////////////////////////////////////////////////
 
