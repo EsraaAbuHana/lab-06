@@ -13,77 +13,56 @@ server.get('/test', (req, res) => {
 })
 
 server.get('/location', (req, res) => {
-    const locData = require('./data/location.json');
-    // console.log(locData);
+    const locData = require('./data/location.json');//bring the data from location.json an assign them as this variable that i creat it .
+    console.log(locData);
     // console.log(locData[0]);
-    const locObj = new Location(locData);
-    // console.log(locObj);
+    const locObj = new Location(locData);//i will creat a new object based on my data from locData.
+    console.log(locObj);
     res.send(locObj);
 
 })
 
 
 server.get('/weather', (req, res) => {
+    let arrOfWeatherObj = [];
     const weatherData = require('./data/weather.json');
-    // console.log(weatherData);
-    // console.log(weatherData[0].data);
-    let arrOfWeatherData = Object.keys(weatherData.data);
-    arrOfWeatherData.forEach(element => {
-
-        const weatherObj = new Weather(weatherData);
+    // i want to access the object inside tha array of them inside the weatherData
+    weatherData.data.forEach(element => {
+        const weatherObj = new Weather(element);
         // console.log(weatherObj.data);
-        arrOfWeatherData.push(this);
-        // element.forEach(prop => {
+        arrOfWeatherObj.push(weatherObj);
+         console.log(arrOfWeatherObj);
 
-        // Object.entries(arrOfWeatherData.data).forEach(element => {
-        //     console.log(element);
-        //   });
+    });   
 
-        // });
-
-    });
-    res.send(arrOfWeatherData);
-    console.log(arrOfWeatherData);
+    res.send(arrOfWeatherObj);
 
 })
 
-server.use('*',(req,res)=>{
-    let errorObj={status: 500,
+server.use('*', (req, res) => {
+    //put it as the last rout in order not to make a response for any rout you already declared it above.
+    let errorObj = {
+        status: 500,
 
-        responseText: "Sorry, something went wrong",}
-    res.status(500).send(errorObj)
+        responseText: "Sorry, something went wrong",
+    }
+    res.status(500).send(errorObj);
 
-    // {
-    //     
-    //     ...
-    //   }
 })
 
 
 function Location(geoData) {
     this.search_query = 'Lynnwood';
-    this.formatted_query = geoData[0].display_name;
+    this.formatted_query = geoData[0].display_name;//i want to access inside to get my data =>>but its an array from only  one index=>>thats why we pass it as index of [0]=>>to git back the first object.
     this.latitude = geoData[0].lat;
     this.longitude = geoData[0].lon;
-    // {
-    //     "search_query": "seattle",
-    //     "formatted_query": "Seattle, WA, USA",
-    //     "latitude": "47.606210",
-    //     "longitude": "-122.332071"
-    //   }
-}
-// let arrOfObjs=[];
 
+}
 
 function Weather(weatherData) {
-    this.forecast = weatherData.data.description;
-    this.time = weatherData.data.valid_date;
-    // arrOfObjs.push();
-    // [{
-    //     "forecast": "Partly cloudy until afternoon.",
-    //     "time": "Mon Jan 01 2001"
-    //   },
-    //]
+    this.forecast = weatherData.weather.description;
+    this.time = weatherData.valid_date;
+
 }
 
 server.listen(PORT, () => {
