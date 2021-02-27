@@ -1,5 +1,12 @@
 'use strict';
+require('dotenv').config();
 
+const express = require('express');
+const server = express();
+const PORT = process.env.PORT || 3030;
+const cors = require('cors');
+const superagent = require('superagent');
+server.use(cors());
 //weather
 //https://api.weatherbit.io/v2.0/history/daily?&city=Raleigh,NC&start_date=2021-02-18&end_date=2021-02-19&key=API_KEY
 
@@ -13,32 +20,54 @@
 
 //why that :3 packages are looking for funding
 // run `npm fund` for details
-require('dotenv').config();
 
-const express = require('express');
-const server = express();
-const PORT = process.env.PORT || 3030;
-const cors = require('cors');
-const superagent = require('superagent');
-server.use(cors());
 /////////////////////////////////////////////////////////////
 
 server.get('/location', locationHandler);
 server.get('/weather', weatherHandler);
 server.get('/parks', parkHandler);
+server.get('/',homeRouteHandler);
+server.use('*', errorHandler);
+function errorHandler(req, res) {
+    let errorObj = {
+        status: 500,
+        responseText: "Sorry, something went wrong",
+    }
+    res.status(500).send(errorObj);
+}
 
 ////////////////////////////////////////////////////////////
-function locationHandler(req, res) {
-    const city = req.query.city;
-    //
-    getLocation(city).then(locationData => {
-        res.status(200).json(locationData);
-    })
+function homeRouteHandler(req, res)  {
+    res.send('your server is working fine!!')
+}
 
+
+function locationHandler(req, res) {
+    const cityName = req.query.city;
+    /////
+    let key=process.env.locationKey;
+    let url=`https://us1.locationiq.com/v1/search.php?key=${key}&q=${cityName}&format=json`;
+    superagent.get(url).then(locData=>{
+        // console.log(locData);
+        const locationData = new Location(cityName,locData.body[0]);
+        res.send(locationData);
+
+    })
+    // const locData = require('./data/location.json');
+    // console.log(locData);
+    // // console.log(locData[0]);
+    // const locObj = new Location(locData);
+    // console.log(locObj);
+    // res.send(locObj);
+    // getLocation(city).then(locationData=>{
+    //     res.status(200).json(locationData);
+
+    // })
+    
 }
 function weatherHandler(req, res) {
     const city = req.query.city;
-
+    
     getWeather(city).then(weatherData => {
         res.status(200).json(weatherData);
     })
@@ -46,7 +75,7 @@ function weatherHandler(req, res) {
 
 function parkHandler(req, res) {
     const city = req.query.city;
-
+    
     getPark(name).then(parkData => {
         res.status(200).json(parkData);
     })
@@ -58,10 +87,9 @@ function getLocation(city) {
     return superagent.get(url).then(locData => {
         //error {"error":"Invalid key"}
         // const  = require('./data/location.json');
-        const locationData = new Location(locData);
+        // const locationData = new Location(locData);
         return locationData;
     })
-
 }
 
 // const arrOfDays_Weather = [];
@@ -84,6 +112,7 @@ function getPark(city) {
         return parkData;
     });
 }
+
 /////////////////////////////////////////////////////////////
 
 function Location(city, geoData) {
@@ -93,6 +122,13 @@ function Location(city, geoData) {
     this.longitude = geoData.lon;
 
 }
+
+
+// function Weather(weatherData) {
+//     this.forecast = weatherData.weather.description;
+//     this.time = weatherData.valid_date;
+
+// }
 function Weather(city_name, temp, datetime) {
     this.city_name = city_name;
     this.temp = day.data.temp;
@@ -127,9 +163,6 @@ server.listen(PORT, () => {
 // });
 //     res.send(aarOfWeatherObj);
 
-// server.get('/test', (req, res) => {
-//     res.send('your server is working fine!!')
-// })
 
 // server.get('/location', (req, res) => {
 //     const locData = require('./data/location.json');
