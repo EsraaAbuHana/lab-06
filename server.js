@@ -31,35 +31,76 @@ const PORT = process.env.PORT || 3030;
 server.get('/weather', weatherHandler);
 server.get('/parks', parkHandler);
 ////////////////////////////////////////////////////////////
-let key = process.env.locationKey;
 // server.get(url, locationHandler);
 server.get('/location', locationHandler);
 
-///////////////////////////////////////////////////////////
-function locationHandler(req, res) {
-    let url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;
-    const values = [req.query.database_url];
-    // const city = req.query.city;
-    client.query(query, values).then(results => {
-//pass it or add it ......database 
-        if (results.rows.length === 0) {
-            superagent.get(url).then(locData => {
-                const locationData = new Location(req.query.database_url, locData.body.results[0].formatted_query, locData.body.results[0].latitude, locData.body.results[0].longitude);
-                const query = `SELECT * FROM locations where search_query = "${city}";`;
-                let values = Object.values(values);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// function locationHandler(req, res) {
+//     let url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;
+//     const values = [req.query.database_url];
+//     // const city = req.query.city;
+//     client.query(query, values).then(results => {
+// //pass it or add it ......database 
+//         if (results.rows.length === 0) {
+//             superagent.get(url).then(locData => {
+//                 const locationData = new Location(req.query.database_url, locData.body.results[0].formatted_query, locData.body.results[0].latitude, locData.body.results[0].longitude);
+//                 const query = `SELECT * FROM locations where search_query = "${city}";`;
+//                 let values = Object.values(values);
 
-                res.send(locationData);
+//                 res.send(locationData);
+//             })
+//                 .catch(() => {
+//                     errorHandler(`Error`, req, res);
+//                 });
+//         }
+//         res.send(results.rows);
+//     })
+//         .catch((error) => {
+//             res.send('this is error', error.message)
+//         })
+// }
+/////// 
+// const city = req.query.city;
+
+server.get('/location', locationHandler);
+//pass it or add it ......database 
+function locationHandler(req, res) {
+    //  const values = [req.query.database_url];
+    let city = req.query.city;
+
+
+    client.query(query, values).then(results => {
+
+        if (location.rows.length === 0 || city !== req.query.city) {
+            let key = process.env.locationKey;
+            let url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;
+            superagent.get(url, (req, res) => {
+                let SQL = `INSERT INTO location (search_query,formatted_query,latitude,longitude) VALUES ($1,$2,$3,$4);`;
+                let locationData = new Location(req.query.database_url, locData.body.results[0].formatted_query, locData.body.results[0].latitude, locData.body.results[0].longitude);
+
+                client.query(SQL, locationData).then((results) => {
+                    res.send(results.rows);
+                })
+                    .catch((error) => {
+                        res.send('this is add to schema error ', error.message)
+                    })
             })
-                .catch(() => {
-                    errorHandler(`Error`, req, res);
-                });
+        } else {
+            if (city === req.query.city) {
+                const SQL = `SELECT * FROM locations where search_query = "${city}";`;
+                client.query(SQL).then(results => {
+                    res.send(results.rows);
+                })
+                    .catch((error) => {
+                        res.send('get from schema error', error.message)
+                    })
+                //   }else{ }  
+            }
         }
         res.send(results.rows);
     })
-        .catch((error) => {
-            res.send('this is', error.message)
-        })
 }
+///////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 function weatherHandler(req, res) {
     const city = req.query.city;
