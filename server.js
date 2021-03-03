@@ -1,12 +1,10 @@
 'use strict';
-
 require('dotenv').config();
 const express = require('express');
 const server = express();
 const cors = require('cors');
 const superagent = require('superagent');
 const pg = require('pg');
-const { query } = require('express');
 const client = new pg.Client({
     connectionString: process.env.database_url
 });
@@ -15,21 +13,55 @@ server.use(cors());
 const PORT = process.env.PORT || 3030;
 
 /////////////////////////////////////////////////////////////
+
 server.get('/location', locationHandler);
 server.get('/weather', weatherHandler);
 server.get('/parks', parkHandler);
 server.get('/yelp', yelpHandler);
-server.get('/movie', movieHandler);
+server.get('/movies', movieHandler);
 server.get('/*', errorHandler);
+//////////////////////////////////////////////////////////////
+function yelpHandler(req, res) {
 
-function yelpHandler(params) {
-    
-}
-function movieHandler(params) {
-    
+    let city = req.query.search_query;
+    const page = req.query.page;
+    const key = process.env.YelpKey;
+    let limit = 5;
+    const offset = (page - 1) * limit + 1;
+    const url = `https://api.yelp.com/v3/businesses/search?location=${city}&limit=${limit}&offset=${offset}`;
+
+    superagent.get(url).set("Authorization", `Bearer ${key}`)
+        .then(yelpData => {
+            let yelpArr = yelpData.body.businesses.map(value => {
+                return new Yelp(value);
+            })
+            // console.log(yelpArr);
+            res.send(yelpArr);
+        }).catch(() => {
+            errorHandler(`Error:!!`, req, res);
+        })
 }
 
-////////////////////////////////////////////////////////////
+function movieHandler(req, res) {
+    let city = req.query.search_query;
+    const key = process.env.MovieKey;
+    const url = `https://api.themoviedb.org/3/search/movie?api_key=${key}&query=${city}`;
+
+    superagent.get(url).then(movieData => {
+        // console.log(movieData.body);
+        let movieArr = movieData.body.results.map(value => {
+            return new Movie(value);
+        })
+        // console.log(movieArr);
+        res.send(movieArr);
+    }).catch(() => {
+        errorHandler(`Error:!!`, req, res);
+    })
+
+
+}
+
+////////////////////////////////////////////////////////////////////////
 function locationHandler(req, res) {
 
     let city = req.query.city;
@@ -52,12 +84,12 @@ function locationHandler(req, res) {
                     let saveValues = [city, locObj.formatted_query, locObj.latitude, locObj.longitude];
                     client.query(insertQuery, saveValues).then((getLocation) => {
                         res.json(getLocation.rows[0]);
-                    }).catch(() => { 
+                    }).catch(() => {
                         errorHandler(`Error:!!`, req, res);
-                      })
-                }).catch(() => { 
+                    })
+                }).catch(() => {
                     errorHandler(`Error:!!`, req, res);
-                  })
+                })
             }
             else if (result.rows[0].search_query === city) {
                 const getObject = new Location(result.rows[0].search_query, result.rows[0]);
@@ -65,54 +97,56 @@ function locationHandler(req, res) {
             }
 
 
-        }).catch(() => { 
+        }).catch(() => {
             errorHandler(`Error:!!`, req, res);
-          })
+        })
 }
 
 
 
 function weatherHandler(req, res) {
-    let ArrOfWeatherDays=[];
+    let ArrOfWeatherDays = [];
     const city = req.query.search_query;
-    let key = process.env.WeatherKey;
-    let url = `https://api.weatherbit.io/v2.0/history/daily?&city=${city_name}&key=${key}`;
+    const key = process.env.WeatherKey;
+    let url = `https://api.weatherbit.io/v2.0/history/daily?&city=${city}&key=${key}`;
 
-superagent.get(url).then(weatherData=>{
-    ArrOfWeatherDays=weatherData.body.data.map(element=>{
-        return new Weather(element);
+    superagent.get(url).then(weatherData => {
+        ArrOfWeatherDays = weatherData.body.data.map(element => {
+            return new Weather(element);
+        })
+        // console.log(ArrOfWeatherDays);
+        res.send(ArrOfWeatherDays);
+    }).catch(() => {
+        errorHandler(`Error:!!`, req, res);
     })
-}).catch(() => { 
-    errorHandler(`Error:!!`, req, res);
-  })
 
 
 }
-let ArrOfParks=[];
+// let ArrOfParks = [];
 function parkHandler(req, res) {
-    ParkCode=req.query.latitude+','+query.longitude;
-    // const city = req.query.city;
     let key = process.env.parkKey;
-    let url = `https://developer.nps.gov/api/v1/parks?parkCode=${ParkCode}&limit=3&api_key=${key}`;
-     superagent.get(url).then(parkDayData => {
+    ParkString = req.query.latitude + ',' + req.query.longitude;
+    let url = `https://developer.nps.gov/api/v1/parks?parkCode=${ParkString}&limit=3&api_key=${key}`;
 
-        ArrOfParks=parkDayData.body.data.map(element=>{
-        parkObj = new Park(parkDayData);
-        return parkObj;
-    });
-    res.send(ArrOfParks);
-    }).catch(() => { 
+    // const city = req.query.city;
+
+    superagent.get(url).then(parkDayData => {
+
+        const ArrOfParks = parkDayData.body.data.map(element => {
+            const parkObj = new Park(element);
+            return parkObj;
+        });
+        res.send(ArrOfParks);
+    }).catch(() => {
         errorHandler(`Error:!!`, req, res);
-      })
-    // getPark(name).then(parkData => {
-    //     res.status(200).json(parkData);
-    // })
+    })
+
 }
 function errorHandler(error) {
     server.use("*", (req, res) => {
-      res.status(500).send(error);
+        res.status(500).send(error);
     })
-  }
+}
 // function getWeather(city) {
 //     // let key = process.env.WeatherKey;
 //     // let url = `https://api.weatherbit.io/v2.0/history/daily?&city=${city_name},NC&start_date=2021-02-18&end_date=2021-02-19&key=${key}`;
@@ -122,42 +156,39 @@ function errorHandler(error) {
 //     });
 // }
 // function getPark(city) {
-   
+
 // }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
 function Location(city, geoData) {
-    this.search_query = city  ;
-    this.formatted_query = geoData.display_name ||geoData.formatted_query ;
-    this.latitude = geoData.lat ||geoData.latitude ;
+    this.search_query = city;
+    this.formatted_query = geoData.display_name || geoData.formatted_query;
+    this.latitude = geoData.lat || geoData.latitude;
     this.longitude = geoData.lon || geoData.longitude;
 }
-function Weather(city_name, temp, datetime) {
-    this.city_name = city_name;
-    this.temp = day.data.temp;
-    this.datetime = new Date(data.datetime).toString().slice(0, 15);
+function Weather(weatherData) {
+    this.forecast = weatherData.weather.description;
+    this.dateTime = new Date(weatherData.valid_date).toString().slice(0, 15);
 }
-function Park(name) {
-    this.name = full_name;
-    this.description = data.description;
-    this.parkUrl = data.url;
-    this.directionsUrl = data.directionsUrl;
-    this.fee = data.fees;
+function Park(parkData) {
+    this.name = parkData.fullName;
+    this.description = parkData.description;
+    this.parkUrl = parkData.url;
+    this.address = `"${parkData.addresses[0].line1}" "${parkData.addresses[0].city}" "${parkData.addresses[0].stateCode}" "${parkData.addresses[0].postalCode}"`;
+    this.fee = parkData.entranceFees[0].cost;
 }
 function Yelp(yelpData) {
-    // https://`<partner_domain_path>/<partner_business_id>/?opportunity_token=<opportunity_token>`&yelp_site=m&yelp_locale=en_US
+
     this.url = yelpData.url;
-  this.name = yelpData.name;
-  this.price = yelpData.price;
-  this.rating = yelpData.rating;
-  this.image_url = yelpData.image_url;
- 
-    
-      
+    this.name = yelpData.name;
+    this.price = yelpData.price;
+    this.rating = yelpData.rating;
+    this.image_url = yelpData.image_url;
+
+
+
 }
-function Movie(movieData)
-{
-    
-    // https://api.themoviedb.org/3/search/movie?api_key=<<api_key>>&query=whiplash&language=de-DE&region=DE
+function Movie(movieData) {
+
     this.title = movieData.title;
     this.overview = movieData.overview;
     this.popularity = movieData.popularity;
@@ -165,40 +196,19 @@ function Movie(movieData)
     this.image_url = `https://image.tmdb.org/t/p/w500/${movieData.poster_path}`;
     this.released_on = movieData.released_on;
     this.average_votes = movieData.average_votes;
-  
-  
+
+
 }
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
 client.connect().then(() => {
     server.listen(PORT, () => {
         console.log(`Listening on PORT ${PORT}`)
     });
 })
-.catch(() => { 
-    errorHandler(`Error:!!`, req, res);
-  })
+    .catch(() => {
+        errorHandler(`Error:!!`, req, res);
+    })
 
-/////error:jquery.min.js:4 GET http://localhost:3000/location?city=amman 500 (Internal Server Error)
-// send @ jquery.min.js:4
-// ajax @ jquery.min.js:4
-// fetchCityData @ app.js:73
-// dispatch @ jquery.min.js:3
-// q.handle @ jquery.min.js:3
 
-//weather
-//https://api.weatherbit.io/v2.0/history/daily?&city=Raleigh,NC&start_date=2021-02-18&end_date=2021-02-19&key=API_KEY
-
-//or
-//https://api.weatherbit.io/v2.0/history/daily?postal_code=27601&country=US&start_date=2021-02-18&end_date=2021-02-19&key=API_KEY
-//(weather by city name) &city=Raleigh,NC&start_date=2021-02-18&end_date=2021-02-19
-//Park
-//https://developer.nps.gov/api/v1/parks?parkCode=acad&api_key=SZcUUGdtmXRqUb5BNLV6gQa6TIvkVF0mLVsdFmWd
-//location
-//https://us1.locationiq.com/v1/search.php?key=YOUR_ACCESS_TOKEN&q=SEARCH_STRING&format=json
-
-//why that :3 packages are looking for funding
-// run `npm fund` for details
-// function locationHandler(req, res) {
-//     let url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;
